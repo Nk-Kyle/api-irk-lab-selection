@@ -1,0 +1,20 @@
+{
+  "name": "api-irk-lab-selection",
+  "version": "1.0.0",
+  "description": "Backend for IRK Lab Selection",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app",
+    "dev": "nodemon app"
+  },
+  "author": "kyle.treoxer@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "firebase": "^9.22.1",
+    "google-auth-library": "^8.8.0",
+    "nodemon": "^2.0.22"
+  }
+}
