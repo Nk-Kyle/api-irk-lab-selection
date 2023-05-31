@@ -14,23 +14,29 @@ const db = getFirestore(firebaseApp);
 
 const userCollection = collection(db, "users");
 const assistantCollection = collection(db, "assistants");
+const { GUEST, STUDENT, ASSISTANT } = require("../constants/constants");
 
-const getOrCreateUser = async (user) => {
+const getOrCreateUser = async (user, isStudent) => {
     const q = query(userCollection, where("email", "==", user.email));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
-        await getAssistant().then((assistants) => {
-            if (assistants.includes(user.email)) {
-                user["isAssistant"] = true;
-            } else {
-                user["isAssistant"] = false;
-            }
-        });
+        if (!isStudent) {
+            user["role"] = GUEST;
+            console.log(GUEST);
+        } else {
+            await getAssistant().then((assistants) => {
+                if (assistants.includes(user.email)) {
+                    user["role"] = ASSISTANT;
+                } else {
+                    user["role"] = STUDENT;
+                }
+            });
+        }
         const newUser = await createUser({
             email: user.email,
             name: user.name,
             picture: user.picture,
-            isAssistant: user.isAssistant,
+            role: user["role"],
         });
         return newUser;
     } else {

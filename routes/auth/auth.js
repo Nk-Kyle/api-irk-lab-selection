@@ -13,29 +13,21 @@ router
         verify(token)
             .then((data) => {
                 // Check if user is a student
-                if (student_regexp.test(data.email)) {
-                    db.getOrCreateUser(data)
-                        .then((user) => {
-                            res.status(200).send({
-                                status: "OK",
-                                user: user,
-                            });
-                        })
-                        .catch((err) => {
-                            res.status(500).send({
-                                status: "ERROR",
-                                message: "Internal server error",
-                            });
+                db.getOrCreateUser(data, student_regexp.test(data.email))
+                    .then((user) => {
+                        res.status(200).send({
+                            status: "OK",
+                            user: user,
                         });
-                } else {
-                    res.status(403).send({
-                        status: "ERROR",
-                        message: "User is not a student",
+                    })
+                    .catch((err) => {
+                        res.status(500).send({
+                            status: "ERROR",
+                            message: "Internal server error",
+                        });
                     });
-                }
             })
             .catch((err) => {
-                console.log(err);
                 res.status(403).send({
                     status: "ERROR",
                     message: "Invalid token",

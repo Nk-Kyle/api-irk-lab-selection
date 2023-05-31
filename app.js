@@ -5,7 +5,10 @@ const cors = require("cors");
 var app = express();
 app.use(
     cors({
-        origin: ["localhost:3000", "https://irk-lab-selection.vercel.app"],
+        origin: [
+            "http://localhost:3000",
+            "https://irk-lab-selection.vercel.app",
+        ],
     })
 );
 
