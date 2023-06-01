@@ -22,7 +22,6 @@ const getOrCreateUser = async (user, isStudent) => {
     if (querySnapshot.empty) {
         if (!isStudent) {
             user["role"] = GUEST;
-            console.log(GUEST);
         } else {
             await getAssistant().then((assistants) => {
                 if (assistants.includes(user.email)) {

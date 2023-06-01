@@ -1,47 +1,31 @@
-const { OAuth2Client } = require("google-auth-library");
-const client = new OAuth2Client(process.env.OAUTH_CLIENT_ID);
-const student_regexp = new RegExp(".*(@std.stei.itb.ac.id)$");
-var express = require("express");
-var router = express.Router();
-var db = require("../../firebase/firestore");
+const express = require("express");
+const router = express.Router();
+const db = require("../../firebase/firestore");
+const verifyToken = require("../../middlewares/verifyToken");
 
 router
-    .get("/", function (req, res) {})
-    .post("/", function (req, res) {
-        token = req.headers["irk-token"];
+    .get("/", function (req, res) {
+        // GET route handling logic
+    })
+    .post("/", verifyToken, function (req, res) {
+        const { user } = req;
+        const student_regexp = new RegExp(".*(@std.stei.itb.ac.id)$");
+        const isStudent = student_regexp.test(user.email);
 
-        verify(token)
-            .then((data) => {
-                // Check if user is a student
-                db.getOrCreateUser(data, student_regexp.test(data.email))
-                    .then((user) => {
-                        res.status(200).send({
-                            status: "OK",
-                            user: user,
-                        });
-                    })
-                    .catch((err) => {
-                        res.status(500).send({
-                            status: "ERROR",
-                            message: "Internal server error",
-                        });
-                    });
+        // Check if user is a student
+        db.getOrCreateUser(user, isStudent)
+            .then((user) => {
+                res.status(200).send({
+                    status: "OK",
+                    user: user,
+                });
             })
             .catch((err) => {
-                res.status(403).send({
+                res.status(500).send({
                     status: "ERROR",
-                    message: "Invalid token",
+                    message: "Internal server error",
                 });
             });
     });
-
-async function verify(token) {
-    const ticket = await client.verifyIdToken({
-        idToken: token,
-        audience: process.env.OAUTH_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    return payload;
-}
 
 module.exports = router;
