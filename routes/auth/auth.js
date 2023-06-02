@@ -20,7 +20,7 @@ router
                     user: user,
                 });
             })
-            .catch((err) => {
+            .catch(() => {
                 res.status(500).send({
                     status: "ERROR",
                     message: "Internal server error",

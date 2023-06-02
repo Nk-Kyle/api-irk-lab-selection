@@ -9,15 +9,18 @@ const {
     where,
     updateDoc,
     doc,
+    limit,
 } = require("firebase/firestore");
 const db = getFirestore(firebaseApp);
 
 const userCollection = collection(db, "users");
 const assistantCollection = collection(db, "assistants");
+const taskCollection = collection(db, "tasks");
 const { GUEST, STUDENT, ASSISTANT } = require("../constants/constants");
 
 const getOrCreateUser = async (user, isStudent) => {
-    const q = query(userCollection, where("email", "==", user.email));
+    // Limit the query to 1 document in case there are multiple documents with the same email
+    const q = query(userCollection, where("email", "==", user.email), limit(1));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
         if (!isStudent) {
@@ -50,6 +53,48 @@ const getOrCreateUser = async (user, isStudent) => {
     }
 };
 
+const getAssistantTask = async (assistantEmail) => {
+    const q = query(
+        taskCollection,
+        where("assistant", "==", assistantEmail),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    } else {
+        return querySnapshot.docs[0].data();
+    }
+};
+
+const createOrUpdateTask = async (user, task) => {
+    task = {
+        title: task.title,
+        description: task.description,
+        imageUrl: task.imageUrl,
+        startDate: new Date(task.startDate).getTime(),
+        assistant: user.email,
+        link: task.link,
+    };
+    const q = query(
+        taskCollection,
+        where("assistant", "==", user.email),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        const newTaskRef = await addDoc(taskCollection, task);
+        const newTaskSnapshot = await getDoc(newTaskRef);
+        return newTaskSnapshot.data();
+    } else {
+        const existingTask = querySnapshot.docs[0];
+        const taskRef = doc(db, "tasks", existingTask.id);
+        await updateDoc(taskRef, task);
+        const updatedTaskSnapshot = await getDoc(taskRef);
+        return updatedTaskSnapshot.data();
+    }
+};
+
 const getAssistant = async () => {
     const assistantsSnapshot = await getDocs(assistantCollection);
     const assistants = [];
@@ -59,33 +104,15 @@ const getAssistant = async () => {
     return assistants;
 };
 
-const getUsers = async () => {
-    const usersSnapshot = await getDocs(userCollection);
-    const users = [];
-    usersSnapshot.forEach((doc) => {
-        users.push(doc.data());
-    });
-};
-
 const createUser = async (user) => {
     const newUserRef = await addDoc(userCollection, user);
     const newUserSnapshot = await getDoc(newUserRef);
     return newUserSnapshot.data();
 };
 
-const queryUserByName = async (name) => {
-    const q = query(userCollection, where("name", "==", name));
-    const querySnapshot = await getDocs(q);
-    const users = [];
-    querySnapshot.forEach((doc) => {
-        users.push(doc.data());
-    });
-    return users;
-};
-
 module.exports = {
-    getUsers,
     getOrCreateUser,
+    getAssistantTask,
     createUser,
-    queryUserByName,
+    createOrUpdateTask,
 };
