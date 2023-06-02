@@ -10,6 +10,7 @@ const {
     updateDoc,
     doc,
     limit,
+    orderBy,
 } = require("firebase/firestore");
 const db = getFirestore(firebaseApp);
 
@@ -68,7 +69,6 @@ const getAssistantTask = async (assistantEmail) => {
 };
 
 const createOrUpdateTask = async (user, task) => {
-    console.log(task);
     task = {
         title: task.title,
         description: task.description,
@@ -77,6 +77,8 @@ const createOrUpdateTask = async (user, task) => {
         assistant: user.email,
         link: task.link,
         score: parseInt(task.score),
+        assistant_picture: user.picture,
+        assistant_name: user.name,
     };
     const q = query(
         taskCollection,
@@ -112,9 +114,32 @@ const createUser = async (user) => {
     return newUserSnapshot.data();
 };
 
+const getTasks = async () => {
+    const tasksSnapshot = await getDocs(
+        query(
+            taskCollection,
+            where("startDate", "<=", new Date().getTime()),
+            orderBy("startDate", "asc")
+        )
+    );
+
+    const tasks = [];
+    for (const doc of tasksSnapshot.docs) {
+        const task = doc.data();
+        const submissionsSnapshot = await getDocs(
+            collection(doc.ref, "submissions")
+        );
+        task.submissionCount = submissionsSnapshot.size;
+        task.id = doc.id;
+        tasks.push(task);
+    }
+    return tasks;
+};
+
 module.exports = {
     getOrCreateUser,
     getAssistantTask,
     createUser,
     createOrUpdateTask,
+    getTasks,
 };
