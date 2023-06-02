@@ -68,6 +68,7 @@ const getAssistantTask = async (assistantEmail) => {
 };
 
 const createOrUpdateTask = async (user, task) => {
+    console.log(task);
     task = {
         title: task.title,
         description: task.description,
@@ -75,6 +76,7 @@ const createOrUpdateTask = async (user, task) => {
         startDate: new Date(task.startDate).getTime(),
         assistant: user.email,
         link: task.link,
+        score: parseInt(task.score),
     };
     const q = query(
         taskCollection,
