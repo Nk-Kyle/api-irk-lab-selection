@@ -19,6 +19,7 @@ const userCollection = collection(db, "users");
 const assistantCollection = collection(db, "assistants");
 const taskCollection = collection(db, "tasks");
 const { GUEST, STUDENT, ASSISTANT } = require("../constants/constants");
+const { parse } = require("dotenv");
 
 const getOrCreateUser = async (user, isStudent) => {
     // Limit the query to 1 document in case there are multiple documents with the same email
@@ -259,7 +260,7 @@ const scoreSubmission = async (user, submissionId, score) => {
         return null;
     }
     const submission = submissionSnapshot.data();
-    submission.score = score;
+    submission.score = parseInt(score);
     submission.scored = true;
     await updateDoc(submissionRef, submission);
     return true;

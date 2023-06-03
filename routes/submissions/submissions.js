@@ -21,6 +21,23 @@ router
                 });
             });
     })
+    .get("/:taskId", function (req, res) {
+        const taskId = req.params.taskId;
+        db.getTaskSubmissions(taskId)
+            .then((submissions) => {
+                res.status(200).send({
+                    status: "OK",
+                    submissions: submissions,
+                });
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).send({
+                    status: "ERROR",
+                    message: "Internal server error",
+                });
+            });
+    })
     .post("/", verifyToken, function (req, res) {
         const { user } = req;
         const student_email = req.body.student_email;
