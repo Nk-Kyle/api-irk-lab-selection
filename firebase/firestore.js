@@ -161,6 +161,47 @@ const getTask = async (user, taskId) => {
     return task;
 };
 
+const getTaskSubmissions = async (taskId) => {
+    const taskRef = doc(db, "tasks", taskId);
+    const taskSnapshot = await getDoc(taskRef);
+    if (!taskSnapshot.exists()) {
+        return null;
+    }
+    const submissionsSnapshot = await getDocs(
+        query(collection(taskRef, "submissions"), orderBy("updated_at", "asc"))
+    );
+    const submissions = [];
+    submissionsSnapshot.forEach((doc) => {
+        submissions.push(doc.data());
+    });
+    return submissions;
+};
+
+const getTaskSubmissionsForAssistant = async (user) => {
+    const q = query(
+        taskCollection,
+        where("assistant", "==", user.email),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return [];
+    } else {
+        const task = querySnapshot.docs[0];
+        const submissionsSnapshot = await getDocs(
+            query(
+                collection(task.ref, "submissions"),
+                orderBy("updated_at", "asc")
+            )
+        );
+        const submissions = [];
+        submissionsSnapshot.forEach((doc) => {
+            submissions.push(doc.data());
+        });
+        return submissions;
+    }
+};
+
 const createOrUpdateSubmission = async (user, taskId, link) => {
     const taskRef = doc(db, "tasks", taskId);
     const taskSnapshot = await getDoc(taskRef);
@@ -172,12 +213,15 @@ const createOrUpdateSubmission = async (user, taskId, link) => {
     const submissionSnapshot = await getDoc(submissionRef);
     if (submissionSnapshot.exists()) {
         // Update the submission
-        if (submissionSnapshot.data().scored === true) {
+        const submission = submissionSnapshot.data();
+        if (submission.scored === true) {
             return false;
         }
-        await updateDoc(submissionRef, {
-            link: link,
-        });
+
+        submission.link = link;
+        submission.updated_at = new Date().getTime();
+
+        await updateDoc(submissionRef, submission);
         return true;
     } else {
         // Create a new submission
@@ -187,9 +231,38 @@ const createOrUpdateSubmission = async (user, taskId, link) => {
             student_picture: user.picture,
             student_name: user.name,
             student_email: user.email,
+            score: 0,
+            updated_at: new Date().getTime(),
         });
         return true;
     }
+};
+
+const scoreSubmission = async (user, submissionId, score) => {
+    const q = query(
+        taskCollection,
+        where("assistant", "==", user.email),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    }
+    const task = querySnapshot.docs[0];
+    if (task.data().assistant !== user.email) {
+        return null;
+    }
+    const taskRef = doc(db, "tasks", task.id);
+    const submissionRef = doc(taskRef, "submissions", submissionId);
+    const submissionSnapshot = await getDoc(submissionRef);
+    if (!submissionSnapshot.exists()) {
+        return null;
+    }
+    const submission = submissionSnapshot.data();
+    submission.score = score;
+    submission.scored = true;
+    await updateDoc(submissionRef, submission);
+    return true;
 };
 
 module.exports = {
@@ -200,4 +273,7 @@ module.exports = {
     getTasks,
     getTask,
     createOrUpdateSubmission,
+    getTaskSubmissions,
+    getTaskSubmissionsForAssistant,
+    scoreSubmission,
 };

@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../../firebase/firestore");
-const verifyToken = require("../../middlewares/verifyToken");
 
 router.get("/", function (req, res) {
     db.getTasks()
