@@ -11,6 +11,7 @@ const {
     doc,
     limit,
     orderBy,
+    setDoc,
 } = require("firebase/firestore");
 const db = getFirestore(firebaseApp);
 
@@ -136,10 +137,67 @@ const getTasks = async () => {
     return tasks;
 };
 
+const getTask = async (user, taskId) => {
+    const taskRef = doc(db, "tasks", taskId);
+    const taskSnapshot = await getDoc(taskRef);
+    if (!taskSnapshot.exists()) {
+        return null;
+    }
+    const task = taskSnapshot.data();
+    const submissionsSnapshot = await getDocs(
+        collection(taskRef, "submissions")
+    );
+    task.submissionCount = submissionsSnapshot.size;
+
+    // Check if the user has submitted a solution
+    const submissionRef = doc(taskRef, "submissions", user.email);
+    const submissionSnapshot = await getDoc(submissionRef);
+    if (submissionSnapshot.exists()) {
+        task.submitted = true;
+        task.submission = submissionSnapshot.data();
+    } else {
+        task.submitted = false;
+    }
+    return task;
+};
+
+const createOrUpdateSubmission = async (user, taskId, link) => {
+    const taskRef = doc(db, "tasks", taskId);
+    const taskSnapshot = await getDoc(taskRef);
+    if (!taskSnapshot.exists()) {
+        return null;
+    }
+    // Check if the user has submitted a solution
+    const submissionRef = doc(taskRef, "submissions", user.email);
+    const submissionSnapshot = await getDoc(submissionRef);
+    if (submissionSnapshot.exists()) {
+        // Update the submission
+        if (submissionSnapshot.data().scored === true) {
+            return false;
+        }
+        await updateDoc(submissionRef, {
+            link: link,
+        });
+        return true;
+    } else {
+        // Create a new submission
+        await setDoc(submissionRef, {
+            link: link,
+            scored: false,
+            student_picture: user.picture,
+            student_name: user.name,
+            student_email: user.email,
+        });
+        return true;
+    }
+};
+
 module.exports = {
     getOrCreateUser,
     getAssistantTask,
     createUser,
     createOrUpdateTask,
     getTasks,
+    getTask,
+    createOrUpdateSubmission,
 };
