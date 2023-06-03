@@ -19,7 +19,6 @@ const userCollection = collection(db, "users");
 const assistantCollection = collection(db, "assistants");
 const taskCollection = collection(db, "tasks");
 const { GUEST, STUDENT, ASSISTANT } = require("../constants/constants");
-const { parse } = require("dotenv");
 
 const getOrCreateUser = async (user, isStudent) => {
     // Limit the query to 1 document in case there are multiple documents with the same email
@@ -266,6 +265,38 @@ const scoreSubmission = async (user, submissionId, score) => {
     return true;
 };
 
+const getScores = async () => {
+    // Get all tasks
+    const tasksSnapshot = await getDocs(taskCollection);
+    const tasks = [];
+
+    await Promise.all(
+        tasksSnapshot.docs.map(async (doc) => {
+            // For each task, get all submissions
+            const submissionCollection = collection(doc.ref, "submissions");
+            const submissionsSnapshot = await getDocs(submissionCollection);
+            const submissions = [];
+
+            submissionsSnapshot.forEach((doc) => {
+                const submission = doc.data();
+                submissions.push({
+                    student_name: submission.student_name,
+                    student_email: submission.student_email,
+                    score: submission.score,
+                });
+            });
+
+            tasks.push({
+                id: doc.id,
+                title: doc.data().title,
+                submissions: submissions,
+            });
+        })
+    );
+
+    return tasks;
+};
+
 module.exports = {
     getOrCreateUser,
     getAssistantTask,
@@ -277,4 +308,5 @@ module.exports = {
     getTaskSubmissions,
     getTaskSubmissionsForAssistant,
     scoreSubmission,
+    getScores,
 };
