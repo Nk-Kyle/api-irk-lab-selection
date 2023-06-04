@@ -42,6 +42,14 @@ const getOrCreateUser = async (user, isStudent) => {
             picture: user.picture,
             role: user["role"],
         });
+        if (newUser.role === ASSISTANT) {
+            const assistantDoc = await getDoc(
+                doc(assistantCollection, user.email)
+            );
+            let assistant = assistantDoc.data();
+            assistant["picture"] = user.picture;
+            updateDoc(doc(assistantCollection, user.email), assistant);
+        }
         return newUser;
     } else {
         const existingUser = querySnapshot.docs[0];
@@ -51,6 +59,14 @@ const getOrCreateUser = async (user, isStudent) => {
             picture: user.picture,
         });
         const updatedUserSnapshot = await getDoc(userRef);
+        if (existingUser.data().role === ASSISTANT) {
+            const assistantDoc = await getDoc(
+                doc(assistantCollection, user.email)
+            );
+            let assistant = assistantDoc.data();
+            assistant["picture"] = user.picture;
+            updateDoc(doc(assistantCollection, user.email), assistant);
+        }
         return updatedUserSnapshot.data();
     }
 };
@@ -297,6 +313,16 @@ const getScores = async () => {
     return tasks;
 };
 
+const getContacts = async () => {
+    const assistantsSnapshot = await getDocs(assistantCollection);
+    const assistants = [];
+    assistantsSnapshot.forEach((doc) => {
+        assistants.push(doc.data());
+    });
+    return assistants;
+};
+
+
 module.exports = {
     getOrCreateUser,
     getAssistantTask,
@@ -309,4 +335,5 @@ module.exports = {
     getTaskSubmissionsForAssistant,
     scoreSubmission,
     getScores,
+    getContacts,
 };
