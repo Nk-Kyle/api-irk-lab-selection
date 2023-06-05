@@ -283,7 +283,7 @@ const scoreSubmission = async (user, submissionId, score) => {
 
 const getScores = async () => {
     // Get all tasks
-    const tasksSnapshot = await getDocs(taskCollection);
+    const tasksSnapshot = await getDocs(query(taskCollection,where("startDate", "<=", new Date().getTime()), orderBy("startDate", "asc")));
     const tasks = [];
 
     await Promise.all(
@@ -295,11 +295,14 @@ const getScores = async () => {
 
             submissionsSnapshot.forEach((doc) => {
                 const submission = doc.data();
-                submissions.push({
-                    student_name: submission.student_name,
-                    student_email: submission.student_email,
-                    score: submission.score,
-                });
+                if (submission.scored) {
+                    submissions.push({
+                        student_name: submission.student_name,
+                        student_email: submission.student_email,
+                        score: submission.score,
+                    });
+                }
+                
             });
 
             tasks.push({
