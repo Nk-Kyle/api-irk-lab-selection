@@ -4,10 +4,11 @@ const db = require("../../firebase/firestore");
 
 router.get("/", function (req, res) {
     db.getTasks()
-        .then((tasks) => {
+        .then((data) => {
             res.status(200).send({
                 status: "OK",
-                tasks: tasks,
+                tasks: data.tasks,
+                setting: data.setting,
             });
         })
         .catch((err) => {

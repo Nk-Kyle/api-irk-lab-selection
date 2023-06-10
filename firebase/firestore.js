@@ -132,13 +132,20 @@ const createUser = async (user) => {
 };
 
 const getTasks = async () => {
-    const tasksSnapshot = await getDocs(
+    const tasksPromise = getDocs(
         query(
             taskCollection,
             where("startDate", "<=", new Date().getTime()),
             orderBy("startDate", "asc")
         )
     );
+
+    const settingPromise = await getSetting();
+
+    const [tasksSnapshot, setting] = await Promise.all([
+        tasksPromise,
+        settingPromise,
+    ]);
 
     const tasks = [];
     for (const doc of tasksSnapshot.docs) {
@@ -150,7 +157,11 @@ const getTasks = async () => {
         task.id = doc.id;
         tasks.push(task);
     }
-    return tasks;
+
+    return {
+        tasks: tasks,
+        setting: setting,
+    }
 };
 
 const getTask = async (user, taskId) => {
@@ -323,6 +334,14 @@ const getContacts = async () => {
         assistants.push(doc.data());
     });
     return assistants;
+};
+
+const getSetting = async () => {
+    const settingSnapshot = await getDoc(doc(db, "setting", "default"));
+    if (!settingSnapshot.exists()) {
+        return null;
+    }
+    return settingSnapshot.data();
 };
 
 
