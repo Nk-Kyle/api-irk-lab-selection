@@ -1,89 +1,72 @@
 var express = require('express')
 const https = require('https')
-const db = require('../firebase/firestore')
 var router = express.Router()
 require('dotenv').config()
 
 const TOKEN = process.env.LINE_ACCESS_TOKEN
-const headers = {
-    'Content-Type': 'application/json',
-    Authorization: 'Bearer ' + TOKEN,
-}
 
 router.post('/', function (req, res) {
+    // If the user sends a message to your bot, send a reply message
     if (req.body.events[0].type === 'message') {
+        var datares = 'Default'
         const event = req.body.events[0]
         if (event.message.type == 'text') {
             // split text by space
-            var text = event.message.text.split(' ')
-            if (event.source.type === 'user' && text[0] === 'register') {
-                email = text[1]
-                db.registerLine(email, event.source.userId).then((result) => {
-                    let response = ''
-                    if (result) {
-                        response = 'Register success'
-                    } else {
-                        response = 'Register failed'
-                    }
-                    const webhookOptions = {
-                        hostname: 'api.line.me',
-                        path: '/v2/bot/message/reply',
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify({
-                            replyToken: req.body.events[0].replyToken,
-                            messages: [
-                                {
-                                    type: 'text',
-                                    text: response,
-                                },
-                            ],
-                        }),
-                    }
-                    const request = https.request(webhookOptions, (res) => {
-                        res.on('data', (d) => {
-                            process.stdout.write(d)
-                        })
-                    })
-                    request.on('error', (err) => {
-                        console.error(err)
-                    })
-                    request.write(webhookOptions.body)
-                    request.end()
-                })
-            } else {
-                const webhookOptions = {
-                    hostname: 'api.line.me',
-                    path: '/v2/bot/message/reply',
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        replyToken: req.body.events[0].replyToken,
-                        messages: [
-                            {
-                                type: 'text',
-                                text: 'Hello, world!',
-                            },
-                        ],
-                    }),
-                }
+            var text = req.body.events[0].message.text.split(' ')
+            if (text[0].toLowerCase() == 'register') {
+                datares = 'Register'
             }
-
-            const request = https.request(webhookOptions, (res) => {
-                res.on('data', (d) => {
-                    process.stdout.write(d)
-                })
-            })
-            request.on('error', (err) => {
-                console.error(err)
-            })
-            request.write(webhookOptions.body)
-            request.end()
         }
+        // You must stringify reply token and message data to send to the API server
+        const dataString = JSON.stringify({
+            // Define reply token
+            replyToken: req.body.events[0].replyToken,
+            // Define reply messages
+            messages: [
+                {
+                    type: 'text',
+                    text: datares,
+                },
+            ],
+        })
+
+        // Request header. See Messaging API reference for specification
+        const headers = {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + TOKEN,
+        }
+
+        // Options to pass into the request, as defined in the http.request method in the Node.js documentation
+        const webhookOptions = {
+            hostname: 'api.line.me',
+            path: '/v2/bot/message/reply',
+            method: 'POST',
+            headers: headers,
+            body: dataString,
+        }
+
+        // When an HTTP POST request of message type is sent to the /webhook endpoint,
+        // we send an HTTP POST request to https://api.line.me/v2/bot/message/reply
+        // that is defined in the webhookOptions variable.
+
+        // Define our request
+        const request = https.request(webhookOptions, (res) => {
+            res.on('data', (d) => {
+                process.stdout.write(d)
+            })
+        })
+
+        // Handle error
+        // request.on() is a function that is called back if an error occurs
+        // while sending a request to the API server.
+        request.on('error', (err) => {
+            console.error(err)
+        })
+
+        // Finally send the request and the data we defined
+        request.write(dataString)
+        request.end()
     }
-    res.status(200).send({
-        status: 'OK',
-    })
 })
 
 module.exports = router
