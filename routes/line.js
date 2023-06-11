@@ -15,7 +15,7 @@ router.post('/', function (req, res) {
             // split text by space
             var text = req.body.events[0].message.text.split(' ')
             if (text[0].toLowerCase() == 'register') {
-                db.registerLine(event.source.userId, text[1]).then((res) => {
+                db.registerLine(text[1], event.source.userId).then((res) => {
                     console.log(res)
                     if (res) {
                         datares = 'You have been registered!'
