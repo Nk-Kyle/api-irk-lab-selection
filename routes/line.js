@@ -1,6 +1,7 @@
 var express = require('express')
 const https = require('https')
 var router = express.Router()
+const db = require('../firebase/firestore')
 require('dotenv').config()
 
 const TOKEN = process.env.LINE_ACCESS_TOKEN
@@ -14,7 +15,8 @@ router.post('/', function (req, res) {
             // split text by space
             var text = req.body.events[0].message.text.split(' ')
             if (text[0].toLowerCase() == 'register') {
-                datares = 'Register'
+                db.registerLine(event.source.userId, text[1])
+                datares = 'Registering' + text[1] + ' to ' + event.source.userId
             }
         }
         // You must stringify reply token and message data to send to the API server
