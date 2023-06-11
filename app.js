@@ -17,4 +17,8 @@ app.listen(port, () => {
     console.log(`Server started on port ${port}`);
 });
 app.use(express.json());
+app.get("/", (req, res) => {
+    res.sendStatus(200)
+})
 app.use("/api", require("./routes/api"));
+app.use("/line", require("./routes/line"))
