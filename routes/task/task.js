@@ -3,6 +3,10 @@ const router = express.Router();
 const db = require("../../firebase/firestore");
 const verifyToken = require("../../middlewares/verifyToken");
 
+const https = require("https");
+require("dotenv").config();
+const TOKEN = process.env.LINE_ACCESS_TOKEN;
+
 router
     .get("/", verifyToken, function (req, res) {
         // GET route handling logic
@@ -83,6 +87,18 @@ router
                         message: "Task already scored",
                     });
                 } else {
+                    if (result[2]) {
+                        pushMessage(
+                            result[1],
+                            `New Submission by ${user.email}\nSubmission link:\n${link}\n\nPlease score the submission at ${process.env.FRONTEND_URL}/manage`,
+                        );
+                    } else {
+                        pushMessage(
+                            result[1],
+                            `Updated Submission by ${user.email}\nSubmission Link:\n${link}\n\nPlease score the submission at ${process.env.FRONTEND_URL}/manage`,
+                        );
+                    }
+
                     res.status(200).send({
                         status: "OK",
                         link: link,
@@ -97,5 +113,41 @@ router
                 });
             });
     });
+
+const pushMessage = async (assistantEmail, message) => {
+    const assistant = await db.getAssistantByEmail(assistantEmail);
+    const userId = assistant.linehook;
+    if (userId) {
+        const data = JSON.stringify({
+            to: userId,
+            messages: [
+                {
+                    type: "text",
+                    text: message,
+                },
+            ],
+        });
+
+        const options = {
+            hostname: "api.line.me",
+            path: "/v2/bot/message/push",
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + TOKEN,
+            },
+            body: data,
+        };
+
+        const request = https.request(options);
+
+        request.on("error", (error) => {
+            console.error(error);
+        });
+
+        request.write(data);
+        request.end();
+    }
+};
 
 module.exports = router;
