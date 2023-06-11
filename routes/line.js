@@ -9,13 +9,6 @@ const headers = {
     'Content-Type': 'application/json',
     Authorization: 'Bearer ' + TOKEN,
 }
-var webhookOptions = {
-    hostname: 'api.line.me',
-    path: '/v2/bot/message/reply',
-    method: 'POST',
-    headers: headers,
-    body: {},
-}
 
 router.post('/', function (req, res) {
     if (req.body.events[0].type === 'message') {
@@ -32,15 +25,21 @@ router.post('/', function (req, res) {
                     } else {
                         response = 'Register failed'
                     }
-                    webhookOptions.body = JSON.stringify({
-                        replyToken: req.body.events[0].replyToken,
-                        messages: [
-                            {
-                                type: 'text',
-                                text: response,
-                            },
-                        ],
-                    })
+                    const webhookOptions = {
+                        hostname: 'api.line.me',
+                        path: '/v2/bot/message/reply',
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            replyToken: req.body.events[0].replyToken,
+                            messages: [
+                                {
+                                    type: 'text',
+                                    text: response,
+                                },
+                            ],
+                        }),
+                    }
                     const request = https.request(webhookOptions, (res) => {
                         res.on('data', (d) => {
                             process.stdout.write(d)
@@ -53,26 +52,33 @@ router.post('/', function (req, res) {
                     request.end()
                 })
             } else {
-                webhookOptions.body = JSON.stringify({
-                    replyToken: req.body.events[0].replyToken,
-                    messages: [
-                        {
-                            type: 'text',
-                            text: text,
-                        },
-                    ],
-                })
-                const request = https.request(webhookOptions, (res) => {
-                    res.on('data', (d) => {
-                        process.stdout.write(d)
-                    })
-                })
-                request.on('error', (err) => {
-                    console.error(err)
-                })
-                request.write(webhookOptions.body)
-                request.end()
+                const webhookOptions = {
+                    hostname: 'api.line.me',
+                    path: '/v2/bot/message/reply',
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        replyToken: req.body.events[0].replyToken,
+                        messages: [
+                            {
+                                type: 'text',
+                                text: 'Hello, world!',
+                            },
+                        ],
+                    }),
+                }
             }
+
+            const request = https.request(webhookOptions, (res) => {
+                res.on('data', (d) => {
+                    process.stdout.write(d)
+                })
+            })
+            request.on('error', (err) => {
+                console.error(err)
+            })
+            request.write(webhookOptions.body)
+            request.end()
         }
     }
     res.status(200).send({
