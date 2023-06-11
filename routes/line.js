@@ -16,7 +16,6 @@ router.post('/', function (req, res) {
             var text = req.body.events[0].message.text.split(' ')
             if (text[0].toLowerCase() == 'register') {
                 db.registerLine(text[1], event.source.userId).then((res) => {
-                    console.log(res)
                     if (res) {
                         datares = 'You have been registered!'
                     } else {
@@ -35,13 +34,11 @@ router.post('/', function (req, res) {
                         ],
                     })
 
-                    // Request header. See Messaging API reference for specification
                     const headers = {
                         'Content-Type': 'application/json',
                         Authorization: 'Bearer ' + TOKEN,
                     }
 
-                    // Options to pass into the request, as defined in the http.request method in the Node.js documentation
                     const webhookOptions = {
                         hostname: 'api.line.me',
                         path: '/v2/bot/message/reply',
@@ -50,25 +47,62 @@ router.post('/', function (req, res) {
                         body: dataString,
                     }
 
-                    // When an HTTP POST request of message type is sent to the /webhook endpoint,
-                    // we send an HTTP POST request to https://api.line.me/v2/bot/message/reply
-                    // that is defined in the webhookOptions variable.
-
-                    // Define our request
                     const request = https.request(webhookOptions, (res) => {
                         res.on('data', (d) => {
                             process.stdout.write(d)
                         })
                     })
 
-                    // Handle error
-                    // request.on() is a function that is called back if an error occurs
-                    // while sending a request to the API server.
                     request.on('error', (err) => {
                         console.error(err)
                     })
 
-                    // Finally send the request and the data we defined
+                    request.write(dataString)
+                    request.end()
+                })
+            } else if (text[0].toLowerCase() == 'check') {
+                db.getAssistantTask(text[1]).then((task) => {
+                    if (task) {
+                        datares = task
+                    } else {
+                        datares = 'Not Found'
+                    }
+
+                    const dataString = JSON.stringify({
+                        // Define reply toke
+                        replyToken: req.body.events[0].replyToken,
+                        // Define reply messages
+                        messages: [
+                            {
+                                type: 'text',
+                                text: datares,
+                            },
+                        ],
+                    })
+
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + TOKEN,
+                    }
+
+                    const webhookOptions = {
+                        hostname: 'api.line.me',
+                        path: '/v2/bot/message/reply',
+                        method: 'POST',
+                        headers: headers,
+                        body: dataString,
+                    }
+
+                    const request = https.request(webhookOptions, (res) => {
+                        res.on('data', (d) => {
+                            process.stdout.write(d)
+                        })
+                    })
+
+                    request.on('error', (err) => {
+                        console.error(err)
+                    })
+
                     request.write(dataString)
                     request.end()
                 })
