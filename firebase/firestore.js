@@ -96,6 +96,7 @@ const createOrUpdateTask = async (user, task) => {
         score: parseInt(task.score),
         assistant_picture: user.picture,
         assistant_name: user.name,
+        multiplier: parseFloat(task.multiplier),
     };
     const q = query(
         taskCollection,
