@@ -195,12 +195,24 @@ const getTaskSubmissions = async (taskId) => {
     if (!taskSnapshot.exists()) {
         return null;
     }
-    const submissionsSnapshot = await getDocs(
+    const submissionsSnapshotPromise = getDocs(
         query(collection(taskRef, "submissions"), orderBy("updated_at", "asc")),
     );
+
+    const settingPromise = await getSetting();
+
+    const [submissionsSnapshot, setting] = await Promise.all([
+        submissionsSnapshotPromise,
+        settingPromise,
+    ]);
+
+    freezeTimestamp = setting.freezeTimestamp;
+
     const submissions = [];
     submissionsSnapshot.forEach((doc) => {
-        submissions.push(doc.data());
+        if (doc.data().updated_at < freezeTimestamp) {
+            submissions.push(doc.data());
+        }
     });
     return submissions;
 };
@@ -294,16 +306,41 @@ const scoreSubmission = async (user, submissionId, score) => {
 };
 
 const getScores = async () => {
+
+    // const tasksPromise = getDocs(
+    //     query(
+    //         taskCollection,
+    //         where("startDate", "<=", new Date().getTime()),
+    //         orderBy("startDate", "asc"),
+    //     ),
+    // );
+
+    // const settingPromise = await getSetting();
+
+    // const [tasksSnapshot, setting] = await Promise.all([
+    //     tasksPromise,
+    //     settingPromise,
+    // ]);
+
     // Get all tasks
-    const tasksSnapshot = await getDocs(
+    const tasksSnapshotPromise = getDocs(
         query(
             taskCollection,
             where("startDate", "<=", new Date().getTime()),
             orderBy("startDate", "asc"),
         ),
     );
-    const tasks = [];
 
+    const settingPromise = getSetting();
+
+    const [tasksSnapshot, setting] = await Promise.all([
+        tasksSnapshotPromise,
+        settingPromise,
+    ]);
+    
+    freezeTimestamp = setting.freezeTimestamp;
+
+    const tasks = [];
     await Promise.all(
         tasksSnapshot.docs.map(async (doc) => {
             // For each task, get all submissions
@@ -313,7 +350,7 @@ const getScores = async () => {
 
             submissionsSnapshot.forEach((doc) => {
                 const submission = doc.data();
-                if (submission.scored) {
+                if (submission.scored && submission.updated_at < freezeTimestamp) {
                     submissions.push({
                         student_name: submission.student_name,
                         student_email: submission.student_email,
