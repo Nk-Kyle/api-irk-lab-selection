@@ -8,6 +8,7 @@ app.use(
         origin: [
             "http://localhost:3000",
             "https://irk-lab-selection.vercel.app",
+            "https://ierka.xyz"
         ],
     })
 );
