@@ -8,6 +8,7 @@ app.use(
         origin: [
             "https://irk-lab-selection.vercel.app",
             "https://ierka.xyz",
+            "https://www.ierka.xyz",
         ],
     })
 );
